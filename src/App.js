@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
+
 
 export default function App() {
   const [view, setView] = useState("scan");
