@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";  // Added useEffect back
-import { Html5QrcodeScanner } from "html5-qrcode";  // Import the barcode scanner
+import { useState, useEffect } from "react";
+import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
 
 export default function App() {
   const [view, setView] = useState("scan");
@@ -82,24 +82,44 @@ export default function App() {
     setSaveMessage("");
   };
 
-  // Barcode scanner setup
   useEffect(() => {
+    let html5QrCode;
+
     if (view === "liveScanner") {
-      const scanner = new Html5QrcodeScanner("reader", {
-        fps: 10, // frames per second
-        qrbox: 250, // size of scanning box
-      });
+      html5QrCode = new Html5Qrcode("reader");
 
-      scanner.render((decodedText) => {
-        // This is where you can process the decoded barcode
-        fetchTitle(decodedText);
-      });
+      Html5Qrcode.getCameras()
+        .then((devices) => {
+          const backCamera =
+            devices.find((d) =>
+              d.label.toLowerCase().includes("back")
+            ) || devices[0];
 
-      // Cleanup the scanner on component unmount
-      return () => {
-        scanner.clear();
-      };
+          html5QrCode.start(
+            backCamera.id,
+            {
+              fps: 10,
+              qrbox: 250,
+            },
+            (decodedText) => {
+              fetchTitle(decodedText);
+              html5QrCode.stop(); // Stop scanner after one scan
+            },
+            (errorMessage) => {
+              // Silent scan errors
+            }
+          );
+        })
+        .catch((err) => {
+          console.error("Camera error:", err);
+        });
     }
+
+    return () => {
+      if (html5QrCode && html5QrCode.getState() === 2) {
+        html5QrCode.stop().catch(() => {});
+      }
+    };
   }, [view]);
 
   return (
@@ -138,7 +158,7 @@ export default function App() {
 
         {view === "liveScanner" && (
           <>
-            <h3>📷 Live Barcode Scanner</h3>
+            <h3>📷 Live Barcode Scanner (Back Camera)</h3>
             <div id="reader" style={{ width: "100%" }}></div>
             <button style={styles.secondaryButton} onClick={handleBack}>
               🔙 Return to Scanner
