@@ -14,6 +14,7 @@ export default function App() {
   const [isSaved, setIsSaved] = useState(false);
 
   const fetchTitle = async (isbnToUse) => {
+    if (!isbnToUse) return;
     try {
       const response = await fetch("https://testocrtest.pythonanywhere.com/receive_isbn", {
         method: "POST",
