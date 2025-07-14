@@ -1,6 +1,5 @@
-// src/App.js
-import { useState } from "react";
-import BarcodeScanner from "./components/BarcodeScanner";
+import { useState, useEffect } from "react";
+import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
 
 export default function App() {
   const [view, setView] = useState("scan");
@@ -55,17 +54,18 @@ export default function App() {
       });
 
       const data = await response.json();
-
-      if (data && data.status === "success") {
-        setIsSaved(true);
-        setSaveMessage("✅ Saved successfully!");
-      } else {
-        throw new Error("Unexpected response");
-      }
+      setIsSaved(true);
+      setSaveMessage("✅ Saved successfully");
+      console.log("✅ Saved:", data);
     } catch (error) {
-      setIsSaved(false);
-      setSaveMessage("❌ Save may not have completed.");
       console.error("❌ Save error:", error);
+    }
+  };
+
+  const handleManualIsbnFetch = () => {
+    const trimmed = manualIsbn.trim();
+    if (trimmed) {
+      fetchTitle(trimmed);
     }
   };
 
@@ -82,6 +82,46 @@ export default function App() {
     setSaveMessage("");
   };
 
+  useEffect(() => {
+    let html5QrCode;
+
+    if (view === "liveScanner") {
+      html5QrCode = new Html5Qrcode("reader");
+
+      Html5Qrcode.getCameras()
+        .then((devices) => {
+          const backCamera =
+            devices.find((d) =>
+              d.label.toLowerCase().includes("back")
+            ) || devices[0];
+
+          html5QrCode.start(
+            backCamera.id,
+            {
+              fps: 10,
+              qrbox: 250,
+            },
+            (decodedText) => {
+              fetchTitle(decodedText);
+              html5QrCode.stop(); // Stop scanner after one scan
+            },
+            (errorMessage) => {
+              // Silent scan errors
+            }
+          );
+        })
+        .catch((err) => {
+          console.error("Camera error:", err);
+        });
+    }
+
+    return () => {
+      if (html5QrCode && html5QrCode.getState() === 2) {
+        html5QrCode.stop().catch(() => {});
+      }
+    };
+  }, [view]);
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
@@ -93,24 +133,21 @@ export default function App() {
               🎦 Start Live Scanner
             </button>
             <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>
-              ✍️ Enter ISBN Manually
+              📄 Enter ISBN Manually 
             </button>
           </>
         )}
 
         {view === "manualIsbn" && (
           <>
-            <h3>Manual ISBN Entry</h3>
+            <h3>Enter ISBN manually</h3>
             <input
               value={manualIsbn}
               onChange={(e) => setManualIsbn(e.target.value)}
               placeholder="Enter ISBN"
               style={styles.input}
             />
-            <button
-              style={styles.primaryButton}
-              onClick={() => fetchTitle(manualIsbn.trim())}
-            >
+            <button style={styles.primaryButton} onClick={handleManualIsbnFetch}>
               🔍 Fetch Title
             </button>
             <button style={styles.secondaryButton} onClick={handleBack}>
@@ -121,10 +158,10 @@ export default function App() {
 
         {view === "liveScanner" && (
           <>
-            <h3>📷 Live Barcode Scanner</h3>
-            <BarcodeScanner onDetected={(isbn) => fetchTitle(isbn)} />
+            <h3>📷 Live Barcode Scanner (Back Camera)</h3>
+            <div id="reader" style={{ width: "100%" }}></div>
             <button style={styles.secondaryButton} onClick={handleBack}>
-              🔙 Back
+              🔙 Return to Scanner
             </button>
           </>
         )}
@@ -164,15 +201,13 @@ export default function App() {
               style={styles.input}
             />
 
-            <button style={styles.saveButton} onClick={sendToBackend}>
-              💾 Save
-            </button>
-
-            {saveMessage && (
-              <p style={{ color: isSaved ? "green" : "red", marginTop: 12 }}>
-                {isSaved ? "✅ " : "⚠️ "} {saveMessage}
-              </p>
+            {!isSaved && (
+              <button style={styles.saveButton} onClick={sendToBackend}>
+                💾 Save
+              </button>
             )}
+
+            {saveMessage && <p style={{ marginTop: 12, color: "green" }}>{saveMessage}</p>}
 
             <button style={styles.secondaryButton} onClick={handleBack}>
               🔙 Return to Scanner
@@ -259,3 +294,4 @@ const styles = {
     marginTop: "20px",
   },
 };
+\
