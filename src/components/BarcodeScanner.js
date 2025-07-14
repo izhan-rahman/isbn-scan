@@ -1,54 +1,64 @@
-// src/components/BarcodeScanner.js
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
 export default function BarcodeScanner({ onDetected }) {
-  const scannerRef = useRef(null);
-  const [loading, setLoading] = useState(true);
+  const scannerRef = useRef(null); // We'll store the scanner instance here
+  const isScanning = useRef(false); // Track scanning state
 
   useEffect(() => {
     const scanner = new Html5Qrcode("reader");
     scannerRef.current = scanner;
 
+    const config = {
+      fps: 10, // Scanning speed (frames per second)
+      qrbox: { width: 250, height: 250 }, // Scanner box size
+      disableFlip: true, // Disable auto flip
+    };
+
+    // Start scanning
     const startScanner = async () => {
       try {
-        const devices = await Html5Qrcode.getCameras();
-        const backCamera = devices.find((d) =>
-          d.label.toLowerCase().includes("back")
-        ) || devices[0];
-
-        if (!backCamera) throw new Error("No camera found");
-
         await scanner.start(
-          backCamera.id,
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          { facingMode: "environment" }, // Use rear camera
+          config,
           (decodedText) => {
-            const isbn = decodedText.replace(/[^0-9X]/gi, "");
+            // Handle decoded ISBN text
+            const isbn = decodedText.replace(/[^0-9X]/gi, ''); // Clean ISBN
             if (isbn.startsWith("978") || isbn.startsWith("979")) {
-              scanner.stop().then(() => onDetected(isbn));
+              scanner.stop(); // Stop scanning once ISBN is detected
+              isScanning.current = false; // Update scanning state
+              onDetected(isbn); // Pass ISBN to the parent component
             }
           },
-          () => {}
+          (error) => {
+            // Handle errors (optional)
+            console.error("Scanner error:", error);
+          }
         );
-
-        setLoading(false);
+        isScanning.current = true; // Update scanning state
       } catch (err) {
-        console.error("Scanner error:", err);
-        setLoading(false);
+        console.error("Error starting scanner:", err);
       }
     };
 
     startScanner();
 
+    // Cleanup the scanner when component unmounts
     return () => {
-      scanner.stop().catch(() => {});
+      if (isScanning.current) {
+        try {
+          scanner.stop(); // Only stop if the scanner was started
+        } catch (err) {
+          console.warn("Error stopping the scanner:", err);
+        }
+      }
     };
   }, [onDetected]);
 
   return (
     <div>
       <div id="reader" style={{ width: "100%", borderRadius: "10px" }} />
-      {loading && <p>📷 Initializing camera...</p>}
+      <p>📷 Scanning for ISBN...</p>
     </div>
   );
 }
