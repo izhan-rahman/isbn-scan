@@ -82,10 +82,10 @@ export default function App() {
       <div style={styles.card}>
         {view === "scan" && (
           <>
-            <h1 style={styles.header}>📚 ISBN Scanner</h1>
-            <p style={styles.subText}>Point your camera at the barcode</p>
-            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>🎦 Start Live Scanner</button>
-            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>✍️ Enter ISBN Manually</button>
+            <h1 style={styles.header}>ISBN Scanner</h1>
+            <p style={styles.subText}>Focus on Barcode</p>
+            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>Scan ISBN</button>
+            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>Enter Manually</button>
           </>
         )}
 
@@ -98,8 +98,8 @@ export default function App() {
               placeholder="Enter ISBN"
               style={styles.input}
             />
-            <button style={styles.primaryButton} onClick={() => fetchTitle(manualIsbn.trim())}>🔍 Fetch Title</button>
-            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Back</button>
+            <button style={styles.primaryButton} onClick={() => fetchTitle(manualIsbn.trim())}>Next</button>
+            <button style={styles.secondaryButton} onClick={handleBack}>Back</button>
           </>
         )}
 
@@ -107,7 +107,7 @@ export default function App() {
           <>
             <h3>📷 Live Barcode Scanner</h3>
             <BarcodeScanner onDetected={(isbn) => fetchTitle(isbn)} />
-            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Back</button>
+            <button style={styles.secondaryButton} onClick={handleBack}>Back</button>
           </>
         )}
 
@@ -143,10 +143,10 @@ export default function App() {
               style={styles.input}
             />
             {!isSaved && (
-              <button style={styles.saveButton} onClick={sendToBackend}>💾 Save</button>
+              <button style={styles.saveButton} onClick={sendToBackend}>Save</button>
             )}
             {saveMessage && <p style={{ color: "green", marginTop: 12 }}>{saveMessage}</p>}
-            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Return to Scanner</button>
+            <button style={styles.secondaryButton} onClick={handleBack}>Return to Scanner</button>
           </>
         )}
       </div>
