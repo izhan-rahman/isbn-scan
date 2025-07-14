@@ -1,26 +1,18 @@
+/* src/index.css */
 body {
   margin: 0;
-  padding: 0;
-  background-color: #f9f9f9;
   font-family: 'Segoe UI', sans-serif;
-  color: #333;
-}
-
-code {
-  font-family: 'Courier New', monospace;
+  background-color: #fefefe;
 }
 
 button {
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  transition: transform 0.2s ease;
 }
 
 button:hover {
-  transform: scale(1.02);
+  transform: scale(1.05);
 }
 
-/* Simple spinner animation */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+input {
+  font-size: 14px;
 }
