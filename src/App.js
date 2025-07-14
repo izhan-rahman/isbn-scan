@@ -1,4 +1,4 @@
-// App.js
+// src/App.js
 import { useState } from "react";
 import BarcodeScanner from "./components/BarcodeScanner";
 
@@ -22,15 +22,10 @@ export default function App() {
         body: JSON.stringify({ isbn: isbnToUse }),
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Invalid JSON response");
-      }
-
       const data = await response.json();
       setIsbn(isbnToUse);
 
-      if (data?.title) {
+      if (data.title) {
         setTitleFromBackend(data.title);
         setManualTitle("");
         setShowManualTitle(false);
@@ -59,19 +54,18 @@ export default function App() {
         body: JSON.stringify({ isbn, b_title: title, price, quantity }),
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Invalid response from server");
-      }
-
       const data = await response.json();
-      setIsSaved(true);
-      setSaveMessage("✅ Saved successfully");
-      console.log("✅ Saved:", data);
+
+      if (data && data.status === "success") {
+        setIsSaved(true);
+        setSaveMessage("✅ Saved successfully!");
+      } else {
+        throw new Error("Unexpected response");
+      }
     } catch (error) {
-      console.error("❌ Save error:", error);
-      setSaveMessage("⚠️ Save may not have completed.");
       setIsSaved(false);
+      setSaveMessage("❌ Save may not have completed.");
+      console.error("❌ Save error:", error);
     }
   };
 
@@ -98,7 +92,9 @@ export default function App() {
             <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>
               🎦 Start Live Scanner
             </button>
-            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>✍️ Enter ISBN Manually</button>
+            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>
+              ✍️ Enter ISBN Manually
+            </button>
           </>
         )}
 
@@ -111,8 +107,15 @@ export default function App() {
               placeholder="Enter ISBN"
               style={styles.input}
             />
-            <button style={styles.primaryButton} onClick={() => fetchTitle(manualIsbn.trim())}>🔍 Fetch Title</button>
-            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Back</button>
+            <button
+              style={styles.primaryButton}
+              onClick={() => fetchTitle(manualIsbn.trim())}
+            >
+              🔍 Fetch Title
+            </button>
+            <button style={styles.secondaryButton} onClick={handleBack}>
+              🔙 Back
+            </button>
           </>
         )}
 
@@ -120,7 +123,9 @@ export default function App() {
           <>
             <h3>📷 Live Barcode Scanner</h3>
             <BarcodeScanner onDetected={(isbn) => fetchTitle(isbn)} />
-            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Back</button>
+            <button style={styles.secondaryButton} onClick={handleBack}>
+              🔙 Back
+            </button>
           </>
         )}
 
@@ -159,13 +164,19 @@ export default function App() {
               style={styles.input}
             />
 
-            {!isSaved && (
-              <button style={styles.saveButton} onClick={sendToBackend}>💾 Save</button>
+            <button style={styles.saveButton} onClick={sendToBackend}>
+              💾 Save
+            </button>
+
+            {saveMessage && (
+              <p style={{ color: isSaved ? "green" : "red", marginTop: 12 }}>
+                {isSaved ? "✅ " : "⚠️ "} {saveMessage}
+              </p>
             )}
 
-            {saveMessage && <p style={{ color: isSaved ? "green" : "red", marginTop: 12 }}>{saveMessage}</p>}
-
-            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Return to Scanner</button>
+            <button style={styles.secondaryButton} onClick={handleBack}>
+              🔙 Return to Scanner
+            </button>
           </>
         )}
       </div>
