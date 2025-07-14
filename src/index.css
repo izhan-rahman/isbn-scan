@@ -1,18 +1,14 @@
-/* src/index.css */
-body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #fefefe;
+.spinner {
+  margin: 0 auto;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  animation: spin 1s linear infinite;
 }
 
-button {
-  transition: transform 0.2s ease;
-}
-
-button:hover {
-  transform: scale(1.05);
-}
-
-input {
-  font-size: 14px;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
