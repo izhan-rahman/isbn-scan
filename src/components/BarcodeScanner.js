@@ -1,4 +1,3 @@
-// BarcodeScanner.js
 import { useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
@@ -18,46 +17,52 @@ export default function BarcodeScanner({ onDetected }) {
 
     const startScanner = async () => {
       try {
-        const devices = await Html5Qrcode.getCameras();
-        const backCamera = devices.find((d) =>
-          d.label.toLowerCase().includes("back")
-        ) || devices[0];
+        const cameras = await Html5Qrcode.getCameras();
+        if (!cameras || cameras.length === 0) {
+          console.error("No cameras found.");
+          return;
+        }
+
+        const backCamera =
+          cameras.find((cam) => cam.label.toLowerCase().includes("back")) || cameras[0];
 
         await scanner.start(
-          backCamera.id,
+          { deviceId: { exact: backCamera.id } },
           config,
           (decodedText) => {
-            const isbn = decodedText.replace(/[^0-9X]/gi, "");
+            const isbn = decodedText.replace(/[^0-9X]/gi, ""); // Clean ISBN
             if (isbn.startsWith("978") || isbn.startsWith("979")) {
-              if (!isScanning.current) {
-                isScanning.current = true;
-                scanner.stop().then(() => onDetected(isbn));
-              }
+              scanner.stop().then(() => {
+                isScanning.current = false;
+                onDetected(isbn);
+              });
             }
           },
-          (errorMessage) => {
-            // Silent scan errors
+          (error) => {
+            // Optional: log errors silently
           }
         );
+
+        isScanning.current = true;
       } catch (err) {
-        console.error("Scanner start error:", err);
+        console.error("Error starting scanner:", err);
       }
     };
 
     startScanner();
 
     return () => {
-      if (scannerRef.current && isScanning.current) {
-        scannerRef.current.stop().catch((err) =>
-          console.warn("Stop scanner error:", err)
-        );
+      if (isScanning.current) {
+        scanner.stop().catch((err) => {
+          console.warn("Error stopping scanner:", err);
+        });
       }
     };
   }, [onDetected]);
 
   return (
     <div>
-      <div id="reader" style={{ width: "100%", borderRadius: "10px" }} />
+      <div id="reader" style={{ width: "100%", borderRadius: "10px" }}></div>
       <p>📷 Scanning for ISBN...</p>
     </div>
   );
