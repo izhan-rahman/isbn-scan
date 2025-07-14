@@ -4,28 +4,24 @@ import { Html5Qrcode } from "html5-qrcode";
 export default function BarcodeScanner({ onDetected }) {
   const scannerRef = useRef(null);
   const isScanning = useRef(false);
-  const [isLoading, setIsLoading] = useState(true); // 👈 New loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const scanner = new Html5Qrcode("reader");
     scannerRef.current = scanner;
 
     const config = {
-      fps: 15,
+      fps: 10,
       qrbox: { width: 250, height: 250 },
       disableFlip: true,
     };
 
     const startScanner = async () => {
       try {
-        const cameras = await Html5Qrcode.getCameras();
-        if (!cameras || cameras.length === 0) {
-          console.error("No cameras found.");
-          return;
-        }
-
-        const backCamera =
-          cameras.find((cam) => cam.label.toLowerCase().includes("back")) || cameras[0];
+        const devices = await Html5Qrcode.getCameras();
+        const backCamera = devices.find((d) =>
+          d.label.toLowerCase().includes("back")
+        ) || devices[0];
 
         await scanner.start(
           { deviceId: { exact: backCamera.id } },
@@ -33,67 +29,47 @@ export default function BarcodeScanner({ onDetected }) {
           (decodedText) => {
             const isbn = decodedText.replace(/[^0-9X]/gi, "");
             if (isbn.startsWith("978") || isbn.startsWith("979")) {
-              scanner.stop().then(() => {
-                isScanning.current = false;
-                onDetected(isbn);
-              });
+              scanner.stop();
+              isScanning.current = false;
+              onDetected(isbn);
             }
           },
           (error) => {
-            // Ignore scan errors
+            console.warn("Scanning error:", error);
           }
         );
-
         isScanning.current = true;
-        setIsLoading(false); // ✅ Done loading
+        setIsLoading(false);
       } catch (err) {
-        console.error("Error starting scanner:", err);
+        console.error("Camera init error:", err);
         setIsLoading(false);
       }
     };
 
+    const timeout = setTimeout(() => setIsLoading(false), 5000); // fallback
     startScanner();
 
     return () => {
-      if (isScanning.current) {
-        scanner.stop().catch((err) => {
-          console.warn("Error stopping scanner:", err);
-        });
+      clearTimeout(timeout);
+      if (isScanning.current && scanner) {
+        scanner.stop().catch((err) =>
+          console.warn("Scanner cleanup error:", err)
+        );
       }
     };
   }, [onDetected]);
 
   return (
     <div>
-      {isLoading && (
-        <div style={styles.loaderBox}>
-          <div style={styles.spinner} />
-          <p>🎦 Initializing camera...</p>
-        </div>
-      )}
-      <div id="reader" style={{ width: "100%", borderRadius: "10px", display: isLoading ? "none" : "block" }}></div>
+      {isLoading && <p>📷 Initializing camera...</p>}
+      <div
+        id="reader"
+        style={{
+          width: "100%",
+          borderRadius: "10px",
+          display: isLoading ? "none" : "block",
+        }}
+      />
     </div>
   );
 }
-
-const styles = {
-  loaderBox: {
-    textAlign: "center",
-    padding: "20px",
-    color: "#555",
-  },
-  spinner: {
-    margin: "0 auto 12px",
-    width: "40px",
-    height: "40px",
-    border: "4px solid #ccc",
-    borderTop: "4px solid #007bff",
-    borderRadius: "50%",
-    animation: "spin 1s linear infinite",
-  },
-};
-
-// Add this to your index.css or global CSS file
-/*
-
-*/
