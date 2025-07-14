@@ -9,23 +9,25 @@ export default function BarcodeScanner({ onDetected }) {
     const scanner = new Html5Qrcode("reader");
     scannerRef.current = scanner;
 
-    // Start the scanner
+    let isStopped = false;
+
     Html5Qrcode.getCameras()
       .then((devices) => {
-        const backCamera = devices.find((device) =>
-          device.label.toLowerCase().includes("back")
-        ) || devices[0];
+        const backCamera =
+          devices.find((device) =>
+            device.label.toLowerCase().includes("back")
+          ) || devices[0];
 
         return scanner.start(
           { deviceId: { exact: backCamera.id } },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
             const isbn = decodedText.replace(/[^0-9X]/gi, '');
-            if (isbn.startsWith("978") || isbn.startsWith("979")) {
-              scanner.stop().then(() => {
-                onDetected(isbn);
-              }).catch((err) => {
-                console.error("Stop scanner error:", err);
+            if ((isbn.startsWith("978") || isbn.startsWith("979")) && !isStopped) {
+              isStopped = true;
+              onDetected(isbn); // Trigger state update first
+              scanner.stop().catch((err) => {
+                console.error("Error stopping scanner:", err);
               });
             }
           },
@@ -40,7 +42,6 @@ export default function BarcodeScanner({ onDetected }) {
         setLoading(false);
       });
 
-    // Cleanup
     return () => {
       if (scannerRef.current) {
         scannerRef.current.stop().catch(() => {});
@@ -49,10 +50,10 @@ export default function BarcodeScanner({ onDetected }) {
   }, [onDetected]);
 
   return (
-    <div style={{ width: "100%", position: "relative", textAlign: "center" }}>
+    <div style={{ width: "100%", textAlign: "center" }}>
       {loading && (
-        <p style={{ color: "#555", marginBottom: 12 }}>
-          🔄 Initializing camera...
+        <p style={{ color: "#666", marginBottom: "12px" }}>
+          ⏳ Initializing camera...
         </p>
       )}
       <div id="reader" style={{ width: "100%", borderRadius: "10px" }}></div>
