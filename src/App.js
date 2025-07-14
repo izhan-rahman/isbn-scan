@@ -13,7 +13,6 @@ export default function App() {
   const [showManualTitle, setShowManualTitle] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const fetchTitle = async (isbnToUse) => {
     try {
@@ -23,10 +22,15 @@ export default function App() {
         body: JSON.stringify({ isbn: isbnToUse }),
       });
 
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Invalid JSON response");
+      }
+
       const data = await response.json();
       setIsbn(isbnToUse);
 
-      if (data.title) {
+      if (data?.title) {
         setTitleFromBackend(data.title);
         setManualTitle("");
         setShowManualTitle(false);
@@ -48,10 +52,6 @@ export default function App() {
     const title = titleFromBackend || manualTitle;
     if (!isbn || !title || !price || !quantity) return;
 
-    setIsSaving(true);
-    setSaveMessage("");
-    setIsSaved(false);
-
     try {
       const response = await fetch("https://testocrtest.pythonanywhere.com/save_title", {
         method: "POST",
@@ -59,20 +59,19 @@ export default function App() {
         body: JSON.stringify({ isbn, b_title: title, price, quantity }),
       });
 
-      const data = await response.json();
-      setIsSaving(false);
-
-      if (response.ok && data.success !== false) {
-        setIsSaved(true);
-        setSaveMessage("✅ Saved successfully");
-      } else {
-        throw new Error(data.message || "Save failed");
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Invalid response from server");
       }
+
+      const data = await response.json();
+      setIsSaved(true);
+      setSaveMessage("✅ Saved successfully");
+      console.log("✅ Saved:", data);
     } catch (error) {
       console.error("❌ Save error:", error);
-      setIsSaving(false);
+      setSaveMessage("⚠️ Save may not have completed.");
       setIsSaved(false);
-      setSaveMessage("❌ Save may not have completed.");
     }
   };
 
@@ -96,7 +95,9 @@ export default function App() {
           <>
             <h1 style={styles.header}>📚 ISBN Scanner</h1>
             <p style={styles.subText}>Point your camera at the barcode</p>
-            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>🎦 Start Live Scanner</button>
+            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>
+              🎦 Start Live Scanner
+            </button>
             <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>✍️ Enter ISBN Manually</button>
           </>
         )}
@@ -158,15 +159,11 @@ export default function App() {
               style={styles.input}
             />
 
-            {isSaving ? (
-              <p>💾 Saving...</p>
-            ) : (
-              !isSaved && <button style={styles.saveButton} onClick={sendToBackend}>💾 Save</button>
+            {!isSaved && (
+              <button style={styles.saveButton} onClick={sendToBackend}>💾 Save</button>
             )}
 
-            {saveMessage && (
-              <p style={{ color: isSaved ? "green" : "red", marginTop: 12 }}>{saveMessage}</p>
-            )}
+            {saveMessage && <p style={{ color: isSaved ? "green" : "red", marginTop: 12 }}>{saveMessage}</p>}
 
             <button style={styles.secondaryButton} onClick={handleBack}>🔙 Return to Scanner</button>
           </>
