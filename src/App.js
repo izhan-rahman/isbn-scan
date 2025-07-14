@@ -83,8 +83,10 @@ export default function App() {
         {view === "scan" && (
           <>
             <h1 style={styles.header}>ISBN Scanner</h1>
-            <p style={styles.subText}>Focus on Barcode</p>
+            <p style={styles.subText}>Scan to Store Book</p>
             <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>Scan ISBN</button>
+            <br/>
+            <p style={styles.subText}>OR</p>
             <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>Enter Manually</button>
           </>
         )}
@@ -105,7 +107,7 @@ export default function App() {
 
         {view === "liveScanner" && (
           <>
-            <h3>📷 Live Barcode Scanner</h3>
+            <h3>Focus on Barcode</h3>
             <BarcodeScanner onDetected={(isbn) => fetchTitle(isbn)} />
             <button style={styles.secondaryButton} onClick={handleBack}>Back</button>
           </>
