@@ -1,4 +1,4 @@
-// components/BarcodeScanner.js
+
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
@@ -34,7 +34,7 @@ export default function BarcodeScanner({ onDetected }) {
               }
             },
             (err) => {
-              // Optional: silently ignore scan errors
+             
             }
           )
           .then(() => {
@@ -56,7 +56,7 @@ export default function BarcodeScanner({ onDetected }) {
 
   return (
     <div>
-      {loading && <p style={{ color: "#007bff" }}>📸 Initializing camera...</p>}
+      {loading && <p style={{ color: "#007bff" }}>Starting Scanner...</p>}
       <div id="reader" style={{ width: "100%", borderRadius: "10px" }} />
     </div>
   );
