@@ -1,3 +1,4 @@
+// App.js
 import { useState } from "react";
 import BarcodeScanner from "./components/BarcodeScanner";
 
@@ -45,13 +46,11 @@ export default function App() {
 
   const sendToBackend = async () => {
     const title = titleFromBackend || manualTitle;
-    if (!isbn || !title || !price || !quantity) {
-      alert("Please fill all fields.");
-      return;
-    }
+    if (!isbn || !title || !price || !quantity) return;
 
     setIsSaving(true);
     setSaveMessage("");
+    setIsSaved(false);
 
     try {
       const response = await fetch("https://testocrtest.pythonanywhere.com/save_title", {
@@ -61,19 +60,20 @@ export default function App() {
       });
 
       const data = await response.json();
+      setIsSaving(false);
 
-      if (response.ok && data.message?.toLowerCase().includes("success")) {
+      if (response.ok && data.success !== false) {
         setIsSaved(true);
         setSaveMessage("✅ Saved successfully");
       } else {
-        setSaveMessage("⚠️ Save may not have completed.");
+        throw new Error(data.message || "Save failed");
       }
     } catch (error) {
       console.error("❌ Save error:", error);
-      setSaveMessage("❌ Failed to save. Please try again.");
+      setIsSaving(false);
+      setIsSaved(false);
+      setSaveMessage("❌ Save may not have completed.");
     }
-
-    setIsSaving(false);
   };
 
   const handleBack = () => {
@@ -96,12 +96,8 @@ export default function App() {
           <>
             <h1 style={styles.header}>📚 ISBN Scanner</h1>
             <p style={styles.subText}>Point your camera at the barcode</p>
-            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>
-              🎦 Start Live Scanner
-            </button>
-            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>
-              ✍️ Enter ISBN Manually
-            </button>
+            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>🎦 Start Live Scanner</button>
+            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>✍️ Enter ISBN Manually</button>
           </>
         )}
 
@@ -114,12 +110,8 @@ export default function App() {
               placeholder="Enter ISBN"
               style={styles.input}
             />
-            <button style={styles.primaryButton} onClick={() => fetchTitle(manualIsbn.trim())}>
-              🔍 Fetch Title
-            </button>
-            <button style={styles.secondaryButton} onClick={handleBack}>
-              🔙 Back
-            </button>
+            <button style={styles.primaryButton} onClick={() => fetchTitle(manualIsbn.trim())}>🔍 Fetch Title</button>
+            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Back</button>
           </>
         )}
 
@@ -127,9 +119,7 @@ export default function App() {
           <>
             <h3>📷 Live Barcode Scanner</h3>
             <BarcodeScanner onDetected={(isbn) => fetchTitle(isbn)} />
-            <button style={styles.secondaryButton} onClick={handleBack}>
-              🔙 Back
-            </button>
+            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Back</button>
           </>
         )}
 
@@ -168,36 +158,17 @@ export default function App() {
               style={styles.input}
             />
 
-            {!isSaved && (
-              <button
-                style={{
-                  ...styles.saveButton,
-                  backgroundColor: isSaving ? "#6c757d" : "#28a745",
-                  cursor: isSaving ? "not-allowed" : "pointer",
-                  position: "relative",
-                }}
-                onClick={sendToBackend}
-                disabled={isSaving}
-              >
-                {isSaving ? <div style={styles.loader}></div> : "💾 Save"}
-              </button>
+            {isSaving ? (
+              <p>💾 Saving...</p>
+            ) : (
+              !isSaved && <button style={styles.saveButton} onClick={sendToBackend}>💾 Save</button>
             )}
 
             {saveMessage && (
-              <p
-                style={{
-                  marginTop: 12,
-                  color: saveMessage.startsWith("✅") ? "green" : "red",
-                  animation: saveMessage.startsWith("✅") ? "bounce 0.5s ease" : "none",
-                }}
-              >
-                {saveMessage}
-              </p>
+              <p style={{ color: isSaved ? "green" : "red", marginTop: 12 }}>{saveMessage}</p>
             )}
 
-            <button style={styles.secondaryButton} onClick={handleBack}>
-              🔙 Return to Scanner
-            </button>
+            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Return to Scanner</button>
           </>
         )}
       </div>
@@ -278,14 +249,5 @@ const styles = {
     fontSize: "15px",
     cursor: "pointer",
     marginTop: "20px",
-  },
-  loader: {
-    border: "4px solid #f3f3f3",
-    borderTop: "4px solid #fff",
-    borderRadius: "50%",
-    width: "20px",
-    height: "20px",
-    animation: "spin 1s linear infinite",
-    margin: "auto",
   },
 };
