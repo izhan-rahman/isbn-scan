@@ -1,3 +1,4 @@
+// App.js
 import { useState } from "react";
 import BarcodeScanner from "./components/BarcodeScanner";
 
@@ -14,7 +15,7 @@ export default function App() {
   const [isSaved, setIsSaved] = useState(false);
 
   const fetchTitle = async (isbnToUse) => {
-    if (!isbnToUse) return;
+    console.log("fetchTitle triggered with ISBN:", isbnToUse);
     try {
       const response = await fetch("https://testocrtest.pythonanywhere.com/receive_isbn", {
         method: "POST",
@@ -83,12 +84,8 @@ export default function App() {
           <>
             <h1 style={styles.header}>📚 ISBN Scanner</h1>
             <p style={styles.subText}>Point your camera at the barcode</p>
-            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>
-              🎦 Start Live Scanner
-            </button>
-            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>
-              ✍️ Enter ISBN Manually
-            </button>
+            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>🎦 Start Live Scanner</button>
+            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>✍️ Enter ISBN Manually</button>
           </>
         )}
 
@@ -101,15 +98,8 @@ export default function App() {
               placeholder="Enter ISBN"
               style={styles.input}
             />
-            <button
-              style={styles.primaryButton}
-              onClick={() => fetchTitle(manualIsbn.trim())}
-            >
-              🔍 Fetch Title
-            </button>
-            <button style={styles.secondaryButton} onClick={handleBack}>
-              🔙 Back
-            </button>
+            <button style={styles.primaryButton} onClick={() => fetchTitle(manualIsbn.trim())}>🔍 Fetch Title</button>
+            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Back</button>
           </>
         )}
 
@@ -117,9 +107,7 @@ export default function App() {
           <>
             <h3>📷 Live Barcode Scanner</h3>
             <BarcodeScanner onDetected={(isbn) => fetchTitle(isbn)} />
-            <button style={styles.secondaryButton} onClick={handleBack}>
-              🔙 Back
-            </button>
+            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Back</button>
           </>
         )}
 
@@ -127,7 +115,6 @@ export default function App() {
           <>
             <p><strong>ISBN:</strong> {isbn}</p>
             {titleFromBackend && <p><strong>Title:</strong> {titleFromBackend}</p>}
-
             {showManualTitle && (
               <>
                 <p>Enter Book Title:</p>
@@ -139,7 +126,6 @@ export default function App() {
                 />
               </>
             )}
-
             <p>Enter Price:</p>
             <input
               type="number"
@@ -148,7 +134,6 @@ export default function App() {
               placeholder="Enter price"
               style={styles.input}
             />
-
             <p>Enter Quantity:</p>
             <input
               type="number"
@@ -157,18 +142,11 @@ export default function App() {
               placeholder="Enter quantity"
               style={styles.input}
             />
-
             {!isSaved && (
-              <button style={styles.saveButton} onClick={sendToBackend}>
-                💾 Save
-              </button>
+              <button style={styles.saveButton} onClick={sendToBackend}>💾 Save</button>
             )}
-
             {saveMessage && <p style={{ color: "green", marginTop: 12 }}>{saveMessage}</p>}
-
-            <button style={styles.secondaryButton} onClick={handleBack}>
-              🔙 Return to Scanner
-            </button>
+            <button style={styles.secondaryButton} onClick={handleBack}>🔙 Return to Scanner</button>
           </>
         )}
       </div>
@@ -195,14 +173,8 @@ const styles = {
     boxShadow: "0 15px 35px rgba(0,0,0,0.1)",
     textAlign: "center",
   },
-  header: {
-    fontSize: "26px",
-    color: "#007bff",
-  },
-  subText: {
-    color: "#666",
-    marginBottom: "20px",
-  },
+  header: { fontSize: "26px", color: "#007bff" },
+  subText: { color: "#666", marginBottom: "20px" },
   input: {
     padding: "10px",
     width: "90%",
