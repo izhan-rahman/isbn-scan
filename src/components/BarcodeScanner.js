@@ -1,4 +1,4 @@
-// components/BarcodeScanner.js
+// src/components/BarcodeScanner.js
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
@@ -7,57 +7,48 @@ export default function BarcodeScanner({ onDetected }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const html5QrCode = new Html5Qrcode("reader");
+    const scanner = new Html5Qrcode("reader");
+    scannerRef.current = scanner;
 
-    Html5Qrcode.getCameras().then((devices) => {
-      if (devices && devices.length) {
-        const backCamera =
-          devices.find((d) => d.label.toLowerCase().includes("back")) ||
-          devices[0];
+    const startScanner = async () => {
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        const backCamera = devices.find((d) =>
+          d.label.toLowerCase().includes("back")
+        ) || devices[0];
 
-        html5QrCode
-          .start(
-            backCamera.id,
-            {
-              fps: 10,
-              qrbox: 250,
-            },
-            (decodedText) => {
-              html5QrCode.stop().then(() => {
-                onDetected(decodedText);
-              });
-            },
-            () => {} // ignore scan errors
-          )
-          .then(() => setLoading(false))
-          .catch((err) => {
-            console.error("Camera start error:", err);
-            setLoading(false);
-          });
+        if (!backCamera) throw new Error("No camera found");
 
-        scannerRef.current = html5QrCode;
-      } else {
-        alert("No camera found.");
+        await scanner.start(
+          backCamera.id,
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText) => {
+            const isbn = decodedText.replace(/[^0-9X]/gi, "");
+            if (isbn.startsWith("978") || isbn.startsWith("979")) {
+              scanner.stop().then(() => onDetected(isbn));
+            }
+          },
+          () => {}
+        );
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Scanner error:", err);
         setLoading(false);
       }
-    });
+    };
+
+    startScanner();
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
-      }
+      scanner.stop().catch(() => {});
     };
   }, [onDetected]);
 
   return (
-    <div style={{ width: "100%" }}>
-      {loading && (
-        <div style={{ marginBottom: 12 }}>
-          <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>🔄</span>{" "}
-          Initializing camera...
-        </div>
-      )}
-      <div id="reader" style={{ width: "100%" }}></div>
+    <div>
+      <div id="reader" style={{ width: "100%", borderRadius: "10px" }} />
+      {loading && <p>📷 Initializing camera...</p>}
     </div>
   );
 }
