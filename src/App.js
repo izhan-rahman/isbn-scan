@@ -1,4 +1,3 @@
-// App.js
 import { useState } from "react";
 import BarcodeScanner from "./components/BarcodeScanner";
 
@@ -13,9 +12,9 @@ export default function App() {
   const [showManualTitle, setShowManualTitle] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchTitle = async (isbnToUse) => {
-    console.log("fetchTitle triggered with ISBN:", isbnToUse);
     try {
       const response = await fetch("https://testocrtest.pythonanywhere.com/receive_isbn", {
         method: "POST",
@@ -46,7 +45,13 @@ export default function App() {
 
   const sendToBackend = async () => {
     const title = titleFromBackend || manualTitle;
-    if (!isbn || !title || !price || !quantity) return;
+    if (!isbn || !title || !price || !quantity) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage("");
 
     try {
       const response = await fetch("https://testocrtest.pythonanywhere.com/save_title", {
@@ -56,12 +61,19 @@ export default function App() {
       });
 
       const data = await response.json();
-      setIsSaved(true);
-      setSaveMessage("✅ Saved successfully");
-      console.log("✅ Saved:", data);
+
+      if (response.ok && data.message?.toLowerCase().includes("success")) {
+        setIsSaved(true);
+        setSaveMessage("✅ Saved successfully");
+      } else {
+        setSaveMessage("⚠️ Save may not have completed.");
+      }
     } catch (error) {
       console.error("❌ Save error:", error);
+      setSaveMessage("❌ Failed to save. Please try again.");
     }
+
+    setIsSaving(false);
   };
 
   const handleBack = () => {
@@ -82,11 +94,14 @@ export default function App() {
       <div style={styles.card}>
         {view === "scan" && (
           <>
-            <h1 style={styles.header}>ISBN Scanner</h1>
+            <h1 style={styles.header}>📚 ISBN Scanner</h1>
             <p style={styles.subText}>Point your camera at the barcode</p>
-            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>SCAN</button>
-            <p style={styles.subText}>OR</p>
-            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>Enter ISBN Code</button>
+            <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>
+              🎦 Start Live Scanner
+            </button>
+            <button style={styles.manualButton} onClick={() => setView("manualIsbn")}>
+              ✍️ Enter ISBN Manually
+            </button>
           </>
         )}
 
@@ -99,16 +114,22 @@ export default function App() {
               placeholder="Enter ISBN"
               style={styles.input}
             />
-            <button style={styles.primaryButton} onClick={() => fetchTitle(manualIsbn.trim())}>Next</button>
-            <button style={styles.secondaryButton} onClick={handleBack}>Back</button>
+            <button style={styles.primaryButton} onClick={() => fetchTitle(manualIsbn.trim())}>
+              🔍 Fetch Title
+            </button>
+            <button style={styles.secondaryButton} onClick={handleBack}>
+              🔙 Back
+            </button>
           </>
         )}
 
         {view === "liveScanner" && (
           <>
-            <h3>Focus On Barcode</h3>
+            <h3>📷 Live Barcode Scanner</h3>
             <BarcodeScanner onDetected={(isbn) => fetchTitle(isbn)} />
-            <button style={styles.secondaryButton} onClick={handleBack}>Back</button>
+            <button style={styles.secondaryButton} onClick={handleBack}>
+              🔙 Back
+            </button>
           </>
         )}
 
@@ -116,6 +137,7 @@ export default function App() {
           <>
             <p><strong>ISBN:</strong> {isbn}</p>
             {titleFromBackend && <p><strong>Title:</strong> {titleFromBackend}</p>}
+
             {showManualTitle && (
               <>
                 <p>Enter Book Title:</p>
@@ -127,6 +149,7 @@ export default function App() {
                 />
               </>
             )}
+
             <p>Enter Price:</p>
             <input
               type="number"
@@ -135,6 +158,7 @@ export default function App() {
               placeholder="Enter price"
               style={styles.input}
             />
+
             <p>Enter Quantity:</p>
             <input
               type="number"
@@ -143,11 +167,37 @@ export default function App() {
               placeholder="Enter quantity"
               style={styles.input}
             />
+
             {!isSaved && (
-              <button style={styles.saveButton} onClick={sendToBackend}>Save</button>
+              <button
+                style={{
+                  ...styles.saveButton,
+                  backgroundColor: isSaving ? "#6c757d" : "#28a745",
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                  position: "relative",
+                }}
+                onClick={sendToBackend}
+                disabled={isSaving}
+              >
+                {isSaving ? <div style={styles.loader}></div> : "💾 Save"}
+              </button>
             )}
-            {saveMessage && <p style={{ color: "green", marginTop: 12 }}>{saveMessage}</p>}
-            <button style={styles.secondaryButton} onClick={handleBack}>Next Scan</button>
+
+            {saveMessage && (
+              <p
+                style={{
+                  marginTop: 12,
+                  color: saveMessage.startsWith("✅") ? "green" : "red",
+                  animation: saveMessage.startsWith("✅") ? "bounce 0.5s ease" : "none",
+                }}
+              >
+                {saveMessage}
+              </p>
+            )}
+
+            <button style={styles.secondaryButton} onClick={handleBack}>
+              🔙 Return to Scanner
+            </button>
           </>
         )}
       </div>
@@ -174,8 +224,14 @@ const styles = {
     boxShadow: "0 15px 35px rgba(0,0,0,0.1)",
     textAlign: "center",
   },
-  header: { fontSize: "26px", color: "#007bff" },
-  subText: { color: "#666", marginBottom: "20px" },
+  header: {
+    fontSize: "26px",
+    color: "#007bff",
+  },
+  subText: {
+    color: "#666",
+    marginBottom: "20px",
+  },
   input: {
     padding: "10px",
     width: "90%",
@@ -222,5 +278,14 @@ const styles = {
     fontSize: "15px",
     cursor: "pointer",
     marginTop: "20px",
+  },
+  loader: {
+    border: "4px solid #f3f3f3",
+    borderTop: "4px solid #fff",
+    borderRadius: "50%",
+    width: "20px",
+    height: "20px",
+    animation: "spin 1s linear infinite",
+    margin: "auto",
   },
 };
