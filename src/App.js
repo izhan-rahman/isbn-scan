@@ -1,6 +1,7 @@
 // App.js
 import { useState } from "react";
-import BarcodeScanner from "./BarcodeScanner";
+import BarcodeScanner from "./components/BarcodeScanner";
+
 
 export default function App() {
   const [view, setView] = useState("scan");
