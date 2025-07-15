@@ -1,63 +1,59 @@
-// components/BarcodeScanner.js
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
-export default function BarcodeScanner({ onDetected }) {
+const BarcodeScanner = ({ onDetected }) => {
+  const qrCodeRegionId = "scanner";
   const scannerRef = useRef(null);
-  const isScanning = useRef(false);
-  const [loading, setLoading] = useState(true);
+  const html5QrCodeRef = useRef(null);
+  const isScannerRunningRef = useRef(false);
 
   useEffect(() => {
-    const scanner = new Html5Qrcode("reader");
-    scannerRef.current = scanner;
+    if (!scannerRef.current) return;
 
-    Html5Qrcode.getCameras()
-      .then((devices) => {
-        const backCamera =
-          devices.find((d) => d.label.toLowerCase().includes("back")) || devices[0];
+    const html5QrCode = new Html5Qrcode(qrCodeRegionId);
+    html5QrCodeRef.current = html5QrCode;
 
-        if (!backCamera) {
-          throw new Error("No camera found");
+    html5QrCode
+      .start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          if (isScannerRunningRef.current) {
+            isScannerRunningRef.current = false;
+            html5QrCode
+              .stop()
+              .then(() => {
+                html5QrCode.clear();
+                onDetected(decodedText);
+              })
+              .catch((err) => console.error("Error stopping scanner", err));
+          }
+        },
+        (errorMessage) => {
+          // Ignore scan errors
         }
-
-        scanner
-          .start(
-            backCamera.id,
-            { fps: 10, qrbox: 250 },
-            (decodedText) => {
-              const isbn = decodedText.replace(/[^0-9X]/gi, "");
-              if (isbn.startsWith("978") || isbn.startsWith("979")) {
-                scanner.stop().then(() => {
-                  isScanning.current = false;
-                  onDetected(isbn);
-                });
-              }
-            },
-            (err) => {
-              // Optional: silently ignore scan errors
-            }
-          )
-          .then(() => {
-            isScanning.current = true;
-            setLoading(false);
-          });
+      )
+      .then(() => {
+        isScannerRunningRef.current = true;
       })
-      .catch((err) => {
-        console.error("Camera error:", err);
-        setLoading(false);
-      });
+      .catch((err) => console.error("Camera start error", err));
 
     return () => {
-      if (scannerRef.current && isScanning.current) {
-        scannerRef.current.stop().catch(() => {});
+      if (isScannerRunningRef.current) {
+        html5QrCode
+          .stop()
+          .then(() => html5QrCode.clear())
+          .catch((err) => console.error("Cleanup error", err));
       }
     };
-  }, [onDetected]);
+  }, []);
 
   return (
-    <div>
-      {loading && <p style={{ color: "#007bff" }}>📸 Initializing camera...</p>}
-      <div id="reader" style={{ width: "100%", borderRadius: "10px" }} />
-    </div>
+    <div ref={scannerRef} id={qrCodeRegionId} style={{ width: "100%" }} />
   );
-}
+};
+
+export default BarcodeScanner;
