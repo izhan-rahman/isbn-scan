@@ -1,4 +1,3 @@
-// App.js
 import { useState } from "react";
 import BarcodeScanner from "./components/BarcodeScanner";
 
@@ -13,6 +12,7 @@ export default function App() {
   const [showManualTitle, setShowManualTitle] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // NEW
 
   const fetchTitle = async (isbnToUse) => {
     console.log("fetchTitle triggered with ISBN:", isbnToUse);
@@ -48,6 +48,8 @@ export default function App() {
     const title = titleFromBackend || manualTitle;
     if (!isbn || !title || !price || !quantity) return;
 
+    setIsSaving(true); // Disable Save button
+
     try {
       const response = await fetch("https://testocrtest.pythonanywhere.com/save_title", {
         method: "POST",
@@ -61,6 +63,9 @@ export default function App() {
       console.log("✅ Saved:", data);
     } catch (error) {
       console.error("❌ Save error:", error);
+      setSaveMessage("❌ Error while saving");
+    } finally {
+      setIsSaving(false); // Optional: keep disabled or reset
     }
   };
 
@@ -75,6 +80,7 @@ export default function App() {
     setShowManualTitle(false);
     setIsSaved(false);
     setSaveMessage("");
+    setIsSaving(false); // Reset saving state on back
   };
 
   return (
@@ -82,7 +88,7 @@ export default function App() {
       <div style={styles.card}>
         {view === "scan" && (
           <>
-            <h1 style={styles.header}>ISBN Scanner</h1>
+            <h1 style={styles.header}>📚 ISBN Scanner</h1>
             <p style={styles.subText}>Scan to Store Book</p>
             <button style={styles.primaryButton} onClick={() => setView("liveScanner")}>Scan ISBN</button>
             <br/>
@@ -144,8 +150,19 @@ export default function App() {
               placeholder="Enter quantity"
               style={styles.input}
             />
+
             {!isSaved && (
-              <button style={styles.saveButton} onClick={sendToBackend}>Save</button>
+              <button
+                style={{ 
+                  ...styles.saveButton, 
+                  opacity: isSaving ? 0.6 : 1, 
+                  cursor: isSaving ? "not-allowed" : "pointer" 
+                }}
+                onClick={sendToBackend}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "💾 Save"}
+              </button>
             )}
             {saveMessage && <p style={{ color: "green", marginTop: 12 }}>{saveMessage}</p>}
             <button style={styles.secondaryButton} onClick={handleBack}>Return to Scanner</button>
