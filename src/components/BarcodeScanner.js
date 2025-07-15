@@ -2,50 +2,69 @@ import { useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
 const BarcodeScanner = ({ onDetected }) => {
-  const qrCodeRegionId = "scanner";
   const scannerRef = useRef(null);
-  const html5QrCodeRef = useRef(null);
   const isScannerRunningRef = useRef(false);
+  const qrCodeRegionId = "qr-scanner";
 
   useEffect(() => {
-    if (!scannerRef.current) return;
-
     const html5QrCode = new Html5Qrcode(qrCodeRegionId);
-    html5QrCodeRef.current = html5QrCode;
 
-    html5QrCode
-      .start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText) => {
-          if (isScannerRunningRef.current) {
-            isScannerRunningRef.current = false;
+    const config = {
+      fps: 10,
+      qrbox: { width: 250, height: 250 },
+      rememberLastUsedCamera: true,
+    };
+
+    Html5Qrcode.getCameras()
+      .then((devices) => {
+        if (devices && devices.length > 0) {
+          const cameraId = devices[0].id;
+
+          // Only start if not already running
+          if (!isScannerRunningRef.current) {
             html5QrCode
-              .stop()
+              .start(
+                cameraId,
+                config,
+                (decodedText) => {
+                  if (decodedText) {
+                    onDetected(decodedText);
+                    // Stop after one successful scan
+                    html5QrCode
+                      .stop()
+                      .then(() => {
+                        html5QrCode.clear();
+                        isScannerRunningRef.current = false;
+                      })
+                      .catch((err) => console.error("Error stopping scanner", err));
+                  }
+                },
+                (errorMessage) => {
+                  // ignore scan errors
+                }
+              )
               .then(() => {
-                html5QrCode.clear();
-                onDetected(decodedText);
+                isScannerRunningRef.current = true;
               })
-              .catch((err) => console.error("Error stopping scanner", err));
+              .catch((err) => console.error("Camera start error", err));
           }
-        },
-        (errorMessage) => {
-          // Ignore scan errors
+        } else {
+          console.error("No cameras found.");
         }
-      )
-      .then(() => {
-        isScannerRunningRef.current = true;
       })
-      .catch((err) => console.error("Camera start error", err));
+      .catch((err) => {
+        console.error("Camera access error", err);
+      });
 
+    // Cleanup
     return () => {
-      if (isScannerRunningRef.current) {
+      if (html5QrCode && isScannerRunningRef.current) {
         html5QrCode
           .stop()
-          .then(() => html5QrCode.clear())
+          .then(() => {
+            html5QrCode.clear();
+            isScannerRunningRef.current = false;
+          })
           .catch((err) => console.error("Cleanup error", err));
       }
     };
