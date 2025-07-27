@@ -169,6 +169,7 @@ export default function App() {
               <option value="MARINAMALL">MARINA MALL</option>
               <option value="SKYWALK">SKYWALK</option>
               <option value="WAREHOUSE">WAREHOUSE</option>
+              <option value="GARUDA-BNGLR">Garuda-Bnglr</option>
             </select>
 
             {!isSaved && (
