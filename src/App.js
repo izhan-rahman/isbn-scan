@@ -18,7 +18,7 @@ export default function App() {
   const fetchTitle = async (isbnToUse) => {
     console.log("fetchTitle triggered with ISBN:", isbnToUse);
     try {
-      const response = await fetch("https://testocrtest.pythonanywhere.com/receive_isbn", {
+      const response = await fetch("https://testocr.pythonanywhere.com/receive_isbn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isbn: isbnToUse }),
@@ -55,7 +55,7 @@ export default function App() {
     setIsSaving(true);
 
     try {
-      const response = await fetch("https://testocrtest.pythonanywhere.com/save_title", {
+      const response = await fetch("https://testocr.pythonanywhere.com/save_title", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isbn, b_title: title, price, quantity, location }), // ✅ Added location
