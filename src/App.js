@@ -12,12 +12,13 @@ export default function App() {
   const [showManualTitle, setShowManualTitle] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false); // NEW
+  const [isSaving, setIsSaving] = useState(false);
+  const [location, setLocation] = useState(""); // ✅ NEW
 
   const fetchTitle = async (isbnToUse) => {
     console.log("fetchTitle triggered with ISBN:", isbnToUse);
     try {
-      const response = await fetch("https://testocr.pythonanywhere.com/receive_isbn", {
+      const response = await fetch("https://testocrtest.pythonanywhere.com/receive_isbn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isbn: isbnToUse }),
@@ -46,15 +47,18 @@ export default function App() {
 
   const sendToBackend = async () => {
     const title = titleFromBackend || manualTitle;
-    if (!isbn || !title || !price || !quantity) return;
+    if (!isbn || !title || !price || !quantity || !location) {
+      alert("Please fill in all fields including location.");
+      return;
+    }
 
-    setIsSaving(true); // Disable Save button
+    setIsSaving(true);
 
     try {
-      const response = await fetch("https://testocr.pythonanywhere.com/save_title", {
+      const response = await fetch("https://testocrtest.pythonanywhere.com/save_title", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isbn, b_title: title, price, quantity }),
+        body: JSON.stringify({ isbn, b_title: title, price, quantity, location }), // ✅ Added location
       });
 
       const data = await response.json();
@@ -65,7 +69,7 @@ export default function App() {
       console.error("❌ Save error:", error);
       setSaveMessage("❌ Error while saving");
     } finally {
-      setIsSaving(false); // Optional: keep disabled or reset
+      setIsSaving(false);
     }
   };
 
@@ -77,10 +81,11 @@ export default function App() {
     setManualTitle("");
     setPrice("");
     setQuantity("1");
+    setLocation(""); // ✅ Reset location too
     setShowManualTitle(false);
     setIsSaved(false);
     setSaveMessage("");
-    setIsSaving(false); // Reset saving state on back
+    setIsSaving(false);
   };
 
   return (
@@ -151,6 +156,21 @@ export default function App() {
               style={styles.input}
             />
 
+            {/* ✅ Location Dropdown */}
+            <p>Select Location:</p>
+            <select
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              style={styles.input}
+            >
+              <option value="">-- Select Location --</option>
+              <option value="DLF">DLF</option>
+              <option value="GRANDMALL">GRAND MALL</option>
+              <option value="MARINAMALL">MARINA MALL</option>
+              <option value="SKYWALK">SKYWALK</option>
+              <option value="WAREHOUSE">WAREHOUSE</option>
+            </select>
+
             {!isSaved && (
               <button
                 style={{ 
@@ -165,6 +185,7 @@ export default function App() {
               </button>
             )}
             {saveMessage && <p style={{ color: "green", marginTop: 12 }}>{saveMessage}</p>}
+              <br/>
             <button style={styles.secondaryButton} onClick={handleBack}>Return to Scanner</button>
           </>
         )}
